@@ -33,7 +33,7 @@ TLS and OpenDKIM support are optional.
 	```bash
 	$ sudo docker run -p 25:25 \
 			-e maildomain=mail.example.com -e smtp_user=user:pwd \
-			-e dbuser=postgres -e dbdomain=pg01 -e  dbpassword=pg01 -e dbname=postfix_dashboard \
+			-e dbuser=dbusername -e dbdomain=dbaddress -e  dbpassword=dbpwd -e dbname=databasename \
 			-v /path/to/domainkeys:/etc/opendkim/domainkeys \
 			--name postfix -d moschini80/postfix
 	```
@@ -42,6 +42,7 @@ TLS and OpenDKIM support are optional.
 	```bash
 	$ sudo docker run -p 587:587 \
 			-e maildomain=mail.example.com -e smtp_user=user:pwd \
+			-e dbuser=dbusername -e dbdomain=dbaddress -e  dbpassword=dbpwd -e dbname=databasename \
 			-v /path/to/certs:/etc/postfix/certs \
 			--name postfix -d moschini80/postfix
 	```
