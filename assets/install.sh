@@ -14,7 +14,7 @@ nodaemon=true
 command=/opt/postfix.sh
 
 [program:rsyslog]
-command=/usr/sbin/rsyslogd -n -c3
+command=/usr/sbin/rsyslogd -n
 EOF
 
 ############
@@ -28,6 +28,75 @@ EOF
 chmod +x /opt/postfix.sh
 postconf -e myhostname=$maildomain
 postconf -F '*/*/chroot = n'
+##### Create PGSQL Conf File 
+cat >> /etc/rsyslog.d/dash.conf <<EOF
+
+###Templates####
+
+template(name="sql-syslogupdate" type="list" option.stdsql="on") {
+  constant(value="call updateemail('")
+  property(name="msg")
+  constant(value="','")
+  property(name="timereported" dateformat="pgsql" date.inUTC="on")
+  constant(value="','")
+  property(name="hostname")
+  constant(value="','")
+  property(name="syslogtag")
+  constant(value="','")
+  property(name="syslogpriority")
+  constant(value="','")
+  property(name="syslogfacility")
+  constant(value="')")
+}
+
+
+template(name="sql-sysloginsert" type="list" option.stdsql="on") {
+  constant(value="call insertemail('")
+  property(name="msg")
+  constant(value="','")
+  property(name="timereported" dateformat="pgsql" date.inUTC="on")
+  constant(value="','")
+  property(name="hostname")
+  constant(value="','")
+  property(name="syslogtag")
+  constant(value="','")
+  property(name="syslogpriority")
+  constant(value="','")
+  property(name="syslogfacility")
+  constant(value="')")
+}
+
+###load modules###
+module(load="ompgsql")
+module(load="builtin:omfile")
+
+
+
+
+
+
+###Logical####
+###PG###
+if \$msg contains 'from=' then action(type="ompgsql" server="$dbdomain"
+                                     user="$dbuser" pass="$dbpassword"
+                                     db="$dbname"
+                                     template="sql-sysloginsert")
+if \$msg contains 'dsn=' or \$msg contains 'status=' then action(type="ompgsql" server="$dbdomain"
+                                                               user="$dbuser" pass="$dbpassword"
+                                                               db="$dbname"
+                                                               template="sql-syslogupdate")
+                                                               
+###TEXT###                                                       
+#if \$msg contains 'from=' then action(type="omfile" dirCreateMode="0700" FileCreateMode="0644"
+#                                     File="/var/log/pgsql_script_insert.log"
+#                                     template="sql-sysloginsert")
+#                                     
+#if \$msg contains 'dsn=' or \$msg contains 'status=' then action(type="omfile" dirCreateMode="0700" FileCreateMode="0644"
+#                                                               File="/var/log/pgsql_script_update.log"
+#                                                               template="sql-syslogupdate")
+
+EOF
+
 
 ############
 # SASL SUPPORT FOR CLIENTS
